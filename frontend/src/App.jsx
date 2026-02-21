@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 const MAX_INGREDIENT_FIELDS = 10
@@ -18,6 +18,8 @@ function App() {
   // Loading and error states improve user feedback.
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const inputRefs = useRef([])
+  const previousVisibleCountRef = useRef(visibleIngredientCount)
 
   // Use an environment variable if provided, otherwise local backend URL.
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -32,6 +34,37 @@ function App() {
     // Add one field at a time, up to 10 fields total.
     setVisibleIngredientCount((previousCount) => Math.min(previousCount + 1, MAX_INGREDIENT_FIELDS))
   }
+
+  const handleIngredientKeyDown = (event, index) => {
+    if (event.key !== 'Enter') {
+      return
+    }
+
+    event.preventDefault()
+
+    const nextVisibleIndex = index + 1
+
+    // If next field is already visible, just move focus.
+    if (nextVisibleIndex < visibleIngredientCount) {
+      inputRefs.current[nextVisibleIndex]?.focus()
+      return
+    }
+
+    // If we are on the last visible field, create a new one (when possible).
+    if (visibleIngredientCount < MAX_INGREDIENT_FIELDS) {
+      handleNextIngredient()
+    }
+  }
+
+  useEffect(() => {
+    // When a new field is added, focus the newly created input.
+    if (visibleIngredientCount > previousVisibleCountRef.current) {
+      const newInputIndex = visibleIngredientCount - 1
+      inputRefs.current[newInputIndex]?.focus()
+    }
+
+    previousVisibleCountRef.current = visibleIngredientCount
+  }, [visibleIngredientCount])
 
   const handleBackIngredient = () => {
     // Remove one field at a time, but always keep at least 1 field visible.
@@ -127,7 +160,14 @@ function App() {
 
   const sourceLabel = resultSource === 'local-fallback' ? 'local fallback' : resultSource
   const filledIngredientsCount = ingredients.map((item) => item.trim()).filter(Boolean).length
-  const disableGenerateAndClear = filledIngredientsCount <= 1
+  const disableGenerate = filledIngredientsCount <= 1
+  const hasAnyInput = ingredients.some((item) => item.trim() !== '')
+  const canClear =
+    hasAnyInput ||
+    visibleIngredientCount > 1 ||
+    suggestions.length > 0 ||
+    Boolean(resultSource) ||
+    Boolean(error)
 
   return (
     <main className="container">
@@ -144,7 +184,11 @@ function App() {
                 type="text"
                 value={ingredients[index]}
                 onChange={(event) => handleIngredientChange(index, event.target.value)}
+                onKeyDown={(event) => handleIngredientKeyDown(event, index)}
                 placeholder={`e.g. ${index === 0 ? 'egg' : index === 1 ? 'tomato' : 'cheese'}`}
+                ref={(element) => {
+                  inputRefs.current[index] = element
+                }}
               />
             </label>
           ))}
@@ -173,7 +217,7 @@ function App() {
             className="btn btn-primary"
             type="button"
             onClick={handleGenerateIdeas}
-            disabled={isLoading || disableGenerateAndClear}
+            disabled={isLoading || disableGenerate}
           >
             {isLoading ? 'Generating...' : 'Generate Meal Ideas'}
           </button>
@@ -182,13 +226,13 @@ function App() {
             className="btn btn-danger"
             type="button"
             onClick={handleClear}
-            disabled={isLoading || disableGenerateAndClear}
+            disabled={isLoading || !canClear}
           >
             Clear
           </button>
         </div>
 
-        {disableGenerateAndClear && !isLoading && (
+        {disableGenerate && !isLoading && (
           <p className="helper-message">Add at least 2 ingredients to continue.</p>
         )}
 
