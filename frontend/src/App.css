@@ -27,6 +27,12 @@ h1 {
   margin-bottom: 1rem;
 }
 
+.actions-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 label {
   display: grid;
   gap: 0.4rem;
@@ -64,6 +70,12 @@ button:disabled {
 .hint {
   margin: 0;
   color: #555;
+}
+
+.source-label {
+  margin: 0 0 0.6rem;
+  font-size: 0.9rem;
+  color: #666;
 }
 
 .suggestions-list {
