@@ -11,7 +11,9 @@
 
 body {
   margin: 0;
-  background: #f5f7fb;
+  background:
+    linear-gradient(rgba(15, 23, 42, 0.58), rgba(15, 23, 42, 0.58)),
+    url('/images/fast-food-bg.jpg') center / cover no-repeat fixed;
   color: #1f2937;
   min-width: 320px;
   min-height: 100vh;
