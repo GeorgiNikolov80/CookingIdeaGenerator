@@ -108,6 +108,7 @@ function App() {
       <p className="subtitle">Enter a few ingredients and get 2-3 meal ideas!</p>
 
       <section className="card">
+        <h2 className="section-title">Ingredients</h2>
         <div className="form-grid">
           {Array.from({ length: visibleIngredientCount }).map((_, index) => (
             <label key={`ingredient-${index}`}>
@@ -124,6 +125,7 @@ function App() {
 
         <div className="actions-row">
           <button
+            className="btn btn-secondary"
             type="button"
             onClick={handleNextIngredient}
             disabled={visibleIngredientCount >= MAX_INGREDIENT_FIELDS || isLoading}
@@ -132,6 +134,7 @@ function App() {
           </button>
 
           <button
+            className="btn btn-secondary"
             type="button"
             onClick={handleBackIngredient}
             disabled={visibleIngredientCount <= 1 || isLoading}
@@ -139,11 +142,21 @@ function App() {
             Back
           </button>
 
-          <button type="button" onClick={handleGenerateIdeas} disabled={isLoading || disableGenerateAndClear}>
+          <button
+            className="btn btn-primary"
+            type="button"
+            onClick={handleGenerateIdeas}
+            disabled={isLoading || disableGenerateAndClear}
+          >
             {isLoading ? 'Generating...' : 'Generate Meal Ideas'}
           </button>
 
-          <button type="button" onClick={handleClear} disabled={isLoading || disableGenerateAndClear}>
+          <button
+            className="btn btn-danger"
+            type="button"
+            onClick={handleClear}
+            disabled={isLoading || disableGenerateAndClear}
+          >
             Clear
           </button>
         </div>
@@ -156,7 +169,7 @@ function App() {
       </section>
 
       <section className="card">
-        <h2>Suggestions</h2>
+        <h2 className="section-title">Suggestions</h2>
         {resultSource && <p className="source-label">Source: {sourceLabel}</p>}
 
         {suggestions.length === 0 ? (
@@ -164,7 +177,7 @@ function App() {
         ) : (
           <ul className="suggestions-list">
             {suggestions.map((meal, index) => (
-              <li key={`${meal.name}-${index}`}>
+              <li key={`${meal.name}-${index}`} className="suggestion-item">
                 <strong>{meal.name}</strong>
                 {meal.matchedIngredients && meal.matchedIngredients.length > 0 && (
                   <p>Matched: {meal.matchedIngredients.join(', ')}</p>
