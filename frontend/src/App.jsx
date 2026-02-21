@@ -275,6 +275,8 @@ function App() {
           </ul>
         )}
       </section>
+
+      <footer className="page-footer">Created by Georgi Nikolov© 2026</footer>
     </main>
   )
 }

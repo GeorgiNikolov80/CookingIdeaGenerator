@@ -3,11 +3,14 @@
   margin: 0 auto;
   padding: 1rem 1.2rem;
   transform: translateY(-1rem);
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 2rem);
 }
 
 h1 {
   margin: 0;
-  font-size: clamp(2.8rem, 2.2rem + 2vw, 4rem);
+  font-size: clamp(3.3rem, 2.6rem + 2.4vw, 4.8rem);
   letter-spacing: -0.02em;
   text-align: center;
   color: #f8fafc;
@@ -24,6 +27,9 @@ h1 {
 }
 
 .card {
+  width: min(500px, 94%);
+  margin-left: auto;
+  margin-right: auto;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   padding: 1.2rem;
@@ -203,6 +209,15 @@ input:focus {
 
 .suggestions-list a:hover {
   text-decoration: underline;
+}
+
+.page-footer {
+  margin: auto 0 0;
+  padding-top: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #e5e7eb;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
 }
 
 @media (max-width: 640px) {
