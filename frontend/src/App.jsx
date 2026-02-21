@@ -100,7 +100,7 @@ function App() {
 
   const sourceLabel = resultSource === 'local-fallback' ? 'local fallback' : resultSource
   const filledIngredientsCount = ingredients.map((item) => item.trim()).filter(Boolean).length
-  const disableGenerateAndClear = filledIngredientsCount === 1
+  const disableGenerateAndClear = filledIngredientsCount <= 1
 
   return (
     <main className="container">
@@ -149,7 +149,7 @@ function App() {
         </div>
 
         {disableGenerateAndClear && !isLoading && (
-          <p className="helper-message">Add more ingredients to continue.</p>
+          <p className="helper-message">Add at least 2 ingredients to continue.</p>
         )}
 
         {error && <p className="error">{error}</p>}
