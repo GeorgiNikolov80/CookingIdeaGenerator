@@ -17,4 +17,8 @@ body {
   color: #1f2937;
   min-width: 320px;
   min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
