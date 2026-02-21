@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import './App.css'
 
+const MAX_INGREDIENT_FIELDS = 10
+
 function App() {
-  // Keep all ingredient values in one array (max 3 to match backend requirement).
-  const [ingredients, setIngredients] = useState(['', '', ''])
+  // Keep all ingredient values in one array (up to 10 fields).
+  const [ingredients, setIngredients] = useState(Array(MAX_INGREDIENT_FIELDS).fill(''))
 
   // Number of visible input fields. Start with 1 when app loads.
   const [visibleIngredientCount, setVisibleIngredientCount] = useState(1)
@@ -26,8 +28,8 @@ function App() {
   }
 
   const handleNextIngredient = () => {
-    // Add one field at a time, up to 3 fields total.
-    setVisibleIngredientCount((previousCount) => Math.min(previousCount + 1, 3))
+    // Add one field at a time, up to 10 fields total.
+    setVisibleIngredientCount((previousCount) => Math.min(previousCount + 1, MAX_INGREDIENT_FIELDS))
   }
 
   const handleGenerateIdeas = async () => {
@@ -36,9 +38,9 @@ function App() {
 
     // Basic frontend validation before calling backend.
     const cleanedIngredients = ingredients.map((item) => item.trim()).filter(Boolean)
-    if (cleanedIngredients.length !== 3) {
+    if (cleanedIngredients.length === 0) {
       setSuggestions([])
-      setError('Please enter exactly 3 ingredients.')
+      setError('Please enter at least 1 ingredient.')
       return
     }
 
@@ -96,7 +98,7 @@ function App() {
           <button
             type="button"
             onClick={handleNextIngredient}
-            disabled={visibleIngredientCount >= 3 || isLoading}
+            disabled={visibleIngredientCount >= MAX_INGREDIENT_FIELDS || isLoading}
           >
             Next Ingredient
           </button>

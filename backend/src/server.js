@@ -95,7 +95,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // POST /api/suggestions
-// Expects: { ingredients: ["item1", "item2", "item3"] }
+// Expects: { ingredients: ["item1", "item2", ...] } (1 to 10 ingredients)
 // Returns top 2-3 meal suggestions based on matched ingredients.
 // First tries web search, then falls back to local predefined meals.
 app.post("/api/suggestions", async (req, res) => {
@@ -104,7 +104,7 @@ app.post("/api/suggestions", async (req, res) => {
   // Basic validation for beginner-friendly error messages
   if (!Array.isArray(ingredients)) {
     return res.status(400).json({
-      error: "'ingredients' must be an array of 3 text values."
+      error: "'ingredients' must be an array with up to 10 text values."
     });
   }
 
@@ -112,9 +112,15 @@ app.post("/api/suggestions", async (req, res) => {
     .map((item) => String(item || "").trim().toLowerCase())
     .filter(Boolean);
 
-  if (normalized.length !== 3) {
+  if (normalized.length === 0) {
     return res.status(400).json({
-      error: "Please provide exactly 3 ingredients."
+      error: "Please provide at least 1 ingredient."
+    });
+  }
+
+  if (normalized.length > 10) {
+    return res.status(400).json({
+      error: "Please provide no more than 10 ingredients."
     });
   }
 
