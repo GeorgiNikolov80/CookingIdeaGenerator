@@ -13,6 +13,7 @@ function App() {
   // Suggestions returned by the backend API.
   const [suggestions, setSuggestions] = useState([])
   const [resultSource, setResultSource] = useState('')
+  const [lastSearchIngredients, setLastSearchIngredients] = useState([])
 
   // Loading and error states improve user feedback.
   const [isLoading, setIsLoading] = useState(false)
@@ -55,7 +56,27 @@ function App() {
     setVisibleIngredientCount(1)
     setSuggestions([])
     setResultSource('')
+    setLastSearchIngredients([])
     setError('')
+  }
+
+  const requestSuggestions = async ({ searchIngredients, excludeNames = [] }) => {
+    const response = await fetch(`${API_BASE_URL}/api/suggestions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ingredients: searchIngredients, excludeNames }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Something went wrong while generating ideas.')
+    }
+
+    const data = await response.json()
+    setSuggestions(data.suggestions || [])
+    setResultSource(data.source || '')
   }
 
   const handleGenerateIdeas = async () => {
@@ -73,25 +94,31 @@ function App() {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/suggestions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ingredients: cleanedIngredients }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Something went wrong while generating ideas.')
-      }
-
-      const data = await response.json()
-      setSuggestions(data.suggestions || [])
-      setResultSource(data.source || '')
+      setLastSearchIngredients(cleanedIngredients)
+      await requestSuggestions({ searchIngredients: cleanedIngredients })
     } catch (requestError) {
       setSuggestions([])
       setResultSource('')
+      setError(requestError.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleRefreshIdeas = async () => {
+    if (lastSearchIngredients.length === 0) {
+      return
+    }
+
+    setError('')
+    setResultSource('')
+    setIsLoading(true)
+
+    try {
+      // Ask backend to exclude current meal names so refresh can return newer options.
+      const excludeNames = suggestions.map((meal) => meal.name).filter(Boolean)
+      await requestSuggestions({ searchIngredients: lastSearchIngredients, excludeNames })
+    } catch (requestError) {
       setError(requestError.message)
     } finally {
       setIsLoading(false)
@@ -169,7 +196,17 @@ function App() {
       </section>
 
       <section className="card">
-        <h2 className="section-title">Suggestions</h2>
+        <div className="suggestions-header">
+          <h2 className="section-title">Suggestions</h2>
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={handleRefreshIdeas}
+            disabled={isLoading || suggestions.length === 0 || lastSearchIngredients.length === 0}
+          >
+            Refresh
+          </button>
+        </div>
         {resultSource && <p className="source-label">Source: {sourceLabel}</p>}
 
         {suggestions.length === 0 ? (
