@@ -116,6 +116,13 @@ function App() {
                 {meal.matchedIngredients && meal.matchedIngredients.length > 0 && (
                   <p>Matched: {meal.matchedIngredients.join(', ')}</p>
                 )}
+                {meal.recipeUrl && (
+                  <p>
+                    <a href={meal.recipeUrl} target="_blank" rel="noreferrer">
+                      Open recipe
+                    </a>
+                  </p>
+                )}
               </li>
             ))}
           </ul>
