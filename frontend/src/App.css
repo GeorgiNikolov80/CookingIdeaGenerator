@@ -67,6 +67,12 @@ button:disabled {
   margin-top: 0.75rem;
 }
 
+.helper-message {
+  margin-top: 0.75rem;
+  color: #666;
+  font-size: 0.92rem;
+}
+
 .hint {
   margin: 0;
   color: #555;

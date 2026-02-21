@@ -32,6 +32,32 @@ function App() {
     setVisibleIngredientCount((previousCount) => Math.min(previousCount + 1, MAX_INGREDIENT_FIELDS))
   }
 
+  const handleBackIngredient = () => {
+    // Remove one field at a time, but always keep at least 1 field visible.
+    setVisibleIngredientCount((previousCount) => {
+      if (previousCount <= 1) {
+        return 1
+      }
+
+      // Clear the value of the field being removed.
+      const updatedIngredients = [...ingredients]
+      updatedIngredients[previousCount - 1] = ''
+      setIngredients(updatedIngredients)
+
+      return previousCount - 1
+    })
+  }
+
+  const handleClear = () => {
+    // Reset values and UI back to the initial state:
+    // one visible empty ingredient field.
+    setIngredients(Array(MAX_INGREDIENT_FIELDS).fill(''))
+    setVisibleIngredientCount(1)
+    setSuggestions([])
+    setResultSource('')
+    setError('')
+  }
+
   const handleGenerateIdeas = async () => {
     setError('')
     setResultSource('')
@@ -73,6 +99,8 @@ function App() {
   }
 
   const sourceLabel = resultSource === 'local-fallback' ? 'local fallback' : resultSource
+  const filledIngredientsCount = ingredients.map((item) => item.trim()).filter(Boolean).length
+  const disableGenerateAndClear = filledIngredientsCount === 1
 
   return (
     <main className="container">
@@ -103,10 +131,26 @@ function App() {
             Next Ingredient
           </button>
 
-          <button type="button" onClick={handleGenerateIdeas} disabled={isLoading}>
+          <button
+            type="button"
+            onClick={handleBackIngredient}
+            disabled={visibleIngredientCount <= 1 || isLoading}
+          >
+            Back
+          </button>
+
+          <button type="button" onClick={handleGenerateIdeas} disabled={isLoading || disableGenerateAndClear}>
             {isLoading ? 'Generating...' : 'Generate Meal Ideas'}
           </button>
+
+          <button type="button" onClick={handleClear} disabled={isLoading || disableGenerateAndClear}>
+            Clear
+          </button>
         </div>
+
+        {disableGenerateAndClear && !isLoading && (
+          <p className="helper-message">Add more ingredients to continue.</p>
+        )}
 
         {error && <p className="error">{error}</p>}
       </section>
