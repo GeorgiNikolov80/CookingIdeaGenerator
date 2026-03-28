@@ -33,23 +33,7 @@ const POPULAR_RECIPE_DOMAINS = [
 // Middleware:
 // - cors() lets the frontend (Vite app) call this API during development
 // - express.json() lets us read JSON from request bodies
-app.use(
-  cors({
-    origin(origin, callback) {
-      // Allow requests without Origin (for tools like Postman/PowerShell)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      // Allow any local frontend port: 5173, 5174, 5175, etc.
-      if (/^http:\/\/localhost:\d+$/.test(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error("CORS blocked: origin not allowed"));
-    }
-  })
-);
+app.use(cors());
 app.use(express.json());
 
 // Reusable local fallback logic: uses predefined meals in ./data/meals
@@ -140,6 +124,32 @@ function isEnglishRecipe(details) {
   return englishByArea || englishByTitle;
 }
 
+function normalizeList(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.map((item) => String(item || "").trim().toLowerCase()).filter(Boolean);
+}
+
+function listFromQuery(value) {
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => String(item || "").split(","))
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
 // Calls TheMealDB for one ingredient and returns a list of meals.
 async function fetchMealsByIngredient(ingredient) {
   const url = `${RECIPE_API_BASE_URL}/filter.php?i=${encodeURIComponent(ingredient)}`;
@@ -171,39 +181,20 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true, message: "Backend is running" });
 });
 
-// POST /api/suggestions
-// Expects: { ingredients: ["item1", "item2", ...] } (1 to 10 ingredients)
-// Returns top 2-3 meal suggestions based on matched ingredients.
-// Uses web results, prioritizing popular English recipes first.
-// Falls back to local predefined meals if needed.
-app.post("/api/suggestions", async (req, res) => {
-  const { ingredients, excludeNames } = req.body;
-
-  // Basic validation for beginner-friendly error messages
-  if (!Array.isArray(ingredients)) {
-    return res.status(400).json({
-      error: "'ingredients' must be an array with up to 10 text values."
-    });
-  }
-
-  const normalized = ingredients
-    .map((item) => String(item || "").trim().toLowerCase())
-    .filter(Boolean);
-
-  const normalizedExcludeNames = Array.isArray(excludeNames)
-    ? excludeNames.map((item) => String(item || "").trim().toLowerCase()).filter(Boolean)
-    : [];
+async function createSuggestionsResponse({ ingredients, excludeNames }) {
+  const normalized = normalizeList(ingredients);
+  const normalizedExcludeNames = normalizeList(excludeNames);
 
   if (normalized.length === 0) {
-    return res.status(400).json({
-      error: "Please provide at least 1 ingredient."
-    });
+    const error = new Error("Please provide at least 1 ingredient.");
+    error.status = 400;
+    throw error;
   }
 
   if (normalized.length > 10) {
-    return res.status(400).json({
-      error: "Please provide no more than 10 ingredients."
-    });
+    const error = new Error("Please provide no more than 10 ingredients.");
+    error.status = 400;
+    throw error;
   }
 
   try {
@@ -240,10 +231,10 @@ app.post("/api/suggestions", async (req, res) => {
 
     // If web search found no matches, return local fallback.
     if (topCandidates.length === 0) {
-      return res.json({
+      return {
         suggestions: getLocalSuggestions(normalized),
         source: "local-fallback"
-      });
+      };
     }
 
     // Enrich candidates with recipe details, then rank by popularity signals.
@@ -291,20 +282,58 @@ app.post("/api/suggestions", async (req, res) => {
       }));
 
     if (englishPopularSuggestions.length === 0) {
-      return res.json({
+      return {
         suggestions: getLocalSuggestions(normalized),
         source: "local-fallback",
         note: "No English web recipes matched strongly, showing local suggestions instead."
-      });
+      };
     }
 
-    return res.json({ suggestions: englishPopularSuggestions, source: "web" });
+    return { suggestions: englishPopularSuggestions, source: "web" };
   } catch (error) {
     // If the web lookup fails (e.g., no internet), fall back to local logic.
-    return res.json({
+    return {
       suggestions: getLocalSuggestions(normalized),
       source: "local-fallback",
       note: "Web recipe lookup failed, showing local suggestions instead."
+    };
+  }
+}
+
+// GET /api/suggestions?ingredients=egg,tomato&excludeNames=omelette
+app.get("/api/suggestions", async (req, res) => {
+  try {
+    const payload = await createSuggestionsResponse({
+      ingredients: listFromQuery(req.query.ingredients),
+      excludeNames: listFromQuery(req.query.excludeNames)
+    });
+
+    return res.json(payload);
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      error: error.status ? error.message : "Unexpected server error."
+    });
+  }
+});
+
+// POST /api/suggestions
+// Expects: { ingredients: ["item1", "item2", ...] } (1 to 10 ingredients)
+// Returns top 2-3 meal suggestions based on matched ingredients.
+// Uses web results, prioritizing popular English recipes first.
+// Falls back to local predefined meals if needed.
+app.post("/api/suggestions", async (req, res) => {
+  try {
+    if (!Array.isArray(req.body?.ingredients)) {
+      return res.status(400).json({
+        error: "'ingredients' must be an array with up to 10 text values."
+      });
+    }
+
+    const payload = await createSuggestionsResponse(req.body);
+    return res.json(payload);
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      error: error.status ? error.message : "Unexpected server error."
     });
   }
 });
